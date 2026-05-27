@@ -7,7 +7,7 @@ dist/
 .vite-temp/
 
 # Generated Tauri frontend copy from scripts/sync-github-page.ps1
-src/
+/src/
 index.html
 
 # Tauri and Rust build output
