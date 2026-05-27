@@ -1,0 +1,37 @@
+{
+  "name": "picdrop-desktop",
+  "version": "1.0.0",
+  "description": "PicDrop desktop and mobile shell powered by Tauri 2.",
+  "scripts": {
+    "sync:page": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/sync-github-page.ps1",
+    "dev": "npm run sync:page && vite --host 127.0.0.1",
+    "build": "vite build",
+    "build:fresh": "npm run sync:page && npm run build",
+    "preview": "vite preview --host 127.0.0.1",
+    "tauri": "tauri",
+    "desktop:dev": "tauri dev",
+    "desktop:build": "npm run sync:page && tauri build",
+    "android:init": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/tauri-android.ps1 init --ci",
+    "android:dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/tauri-android.ps1 dev",
+    "android:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/tauri-android.ps1 build",
+    "android:build:phone": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/tauri-android.ps1 build --target aarch64",
+    "ios:init": "tauri ios init",
+    "ios:dev": "tauri ios dev",
+    "ios:build": "tauri ios build"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@tauri-apps/api": "^2.11.0",
+    "@tauri-apps/plugin-dialog": "^2.7.1",
+    "@tauri-apps/plugin-fs": "^2.5.1",
+    "fflate": "^0.8.2",
+    "solid-glass": "^0.0.3"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.11.2",
+    "vite": "^7.3.3"
+  }
+}
