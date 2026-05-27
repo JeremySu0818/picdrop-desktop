@@ -10,7 +10,7 @@
     "preview": "vite preview --host 127.0.0.1",
     "tauri": "tauri",
     "desktop:dev": "tauri dev",
-    "desktop:build": "npm run sync:page && tauri build",
+    "desktop:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/tauri-desktop.ps1",
     "android:init": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/tauri-android.ps1 init --ci",
     "android:dev": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/tauri-android.ps1 dev",
     "android:build": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/tauri-android.ps1 build",

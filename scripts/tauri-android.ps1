@@ -25,6 +25,7 @@ if (-not (Test-Path $ndk)) {
 $env:ANDROID_HOME = $sdk
 $env:ANDROID_SDK_ROOT = $sdk
 $env:NDK_HOME = $ndk
+$script:SignedApkPath = $null
 
 $paths = @(
   (Join-Path $sdk 'cmdline-tools\latest\bin'),
@@ -165,6 +166,7 @@ function Get-SigningProperties($propertiesPath) {
 function Sign-ReleaseApk {
   $unsignedApk = Join-Path $root 'src-tauri\gen\android\app\build\outputs\apk\universal\release\app-universal-release-unsigned.apk'
   if (-not (Test-Path $unsignedApk)) {
+    $script:SignedApkPath = $null
     return
   }
 
@@ -199,6 +201,68 @@ function Sign-ReleaseApk {
   }
 
   Write-Output "Signed installable release APK: $signedApk"
+  $script:SignedApkPath = $signedApk
+}
+
+function Copy-ReleaseAsset($source, $destinationName) {
+  if (-not (Test-Path $source)) {
+    throw "Build asset was not found: $source"
+  }
+
+  $output = Join-Path $root 'output'
+  New-Item -ItemType Directory -Force -Path $output | Out-Null
+
+  $destination = Join-Path $output $destinationName
+  Copy-Item -LiteralPath $source -Destination $destination -Force
+  Write-Output "Copied release asset: output/$destinationName"
+}
+
+function Get-ProjectMetadata {
+  $config = Get-Content -LiteralPath (Join-Path $root 'src-tauri\tauri.conf.json') -Raw | ConvertFrom-Json
+
+  return @{
+    ProductName = $config.productName
+    Version = $config.version
+  }
+}
+
+function Get-AndroidTargetLabel {
+  $targetIndex = -1
+  for ($i = 0; $i -lt $TauriArgs.Count; $i += 1) {
+    if ($TauriArgs[$i] -eq '-t' -or $TauriArgs[$i] -eq '--target') {
+      $targetIndex = $i
+      break
+    }
+  }
+
+  if ($targetIndex -lt 0) {
+    return 'universal'
+  }
+
+  $targets = @()
+  for ($i = $targetIndex + 1; $i -lt $TauriArgs.Count; $i += 1) {
+    if ($TauriArgs[$i].StartsWith('-')) {
+      break
+    }
+    $targets += $TauriArgs[$i]
+  }
+
+  if ($targets.Count -eq 1) {
+    return $targets[0]
+  }
+
+  return 'universal'
+}
+
+function Copy-AndroidReleaseAsset($signedApk) {
+  if (-not $signedApk) {
+    return
+  }
+
+  $metadata = Get-ProjectMetadata
+  $targetLabel = Get-AndroidTargetLabel
+  $destinationName = "$($metadata.ProductName)-$($metadata.Version)-android-$targetLabel-signed.apk"
+  Copy-ReleaseAsset $signedApk $destinationName
 }
 
 function Sync-GitHubPage {
@@ -236,6 +300,7 @@ $exitCode = $LASTEXITCODE
 
 if ($exitCode -eq 0 -and $Command -eq 'build' -and -not ($TauriArgs | Where-Object { $_ -eq '--debug' })) {
   Sign-ReleaseApk
+  Copy-AndroidReleaseAsset $script:SignedApkPath
 }
 
 exit $exitCode

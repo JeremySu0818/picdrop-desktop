@@ -9,13 +9,14 @@ the upstream repo, patched for Tauri, and generated into `src` before builds.
 - `npm run build` syncs the GitHub Pages frontend, patches it, and builds web
   assets.
 - `npm run desktop:build` syncs, builds the web assets, then builds the Windows
-  desktop app and installers.
+  desktop app and installers. Release assets are copied to `output/` with
+  normalized names.
 - `npm run desktop:dev` syncs and runs the desktop app in development mode.
 - `npm run android:init` generates or refreshes the Android project.
 - `npm run android:build` syncs, builds web assets, and builds a signed
   installable release APK for mainstream ABIs only: `aarch64` and `x86_64`.
 - `npm run android:build:phone` builds a signed release APK for Android phones
-  only: `aarch64`.
+  only: `aarch64`. Signed APKs are copied to `output/` with normalized names.
 - `npm run ios:init` and `npm run ios:build` are for macOS with Xcode.
 
 ## Notes
