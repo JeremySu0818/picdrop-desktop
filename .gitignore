@@ -2,6 +2,7 @@
 node_modules/
 
 # Vite output and caches
+output/
 dist/
 .vite/
 .vite-temp/
