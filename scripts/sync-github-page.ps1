@@ -22,6 +22,22 @@ function Replace-Text($path, $oldValue, $newValue) {
   Set-Content -LiteralPath $path -Value $content -NoNewline
 }
 
+function Get-Sha256Hash($path) {
+  $stream = [System.IO.File]::OpenRead($path)
+  try {
+    $sha256 = [System.Security.Cryptography.SHA256]::Create()
+    try {
+      return [BitConverter]::ToString($sha256.ComputeHash($stream)).Replace('-', '')
+    }
+    finally {
+      $sha256.Dispose()
+    }
+  }
+  finally {
+    $stream.Dispose()
+  }
+}
+
 function Apply-TauriDownloadPatch($path) {
   $content = Get-Content -LiteralPath $path -Raw
   $content = "import { isTauri } from '@tauri-apps/api/core';`nimport { save } from '@tauri-apps/plugin-dialog';`nimport { writeFile } from '@tauri-apps/plugin-fs';`n`n" + $content
@@ -97,6 +113,18 @@ export async function downloadBlob(blob, filename) {
 }
 
 function Sync-TauriIconsFromPage($faviconPath) {
+  $iconsDir = Join-Path $root 'src-tauri\icons'
+  $existingIcon = Join-Path $iconsDir 'icon.png'
+  $sourceHashPath = Join-Path $iconsDir '.source-favicon.sha256'
+  $newHash = Get-Sha256Hash $faviconPath
+  if ((Test-Path $existingIcon) -and (Test-Path $sourceHashPath)) {
+    $existingHash = (Get-Content -LiteralPath $sourceHashPath -Raw).Trim()
+    if ($newHash -eq $existingHash) {
+      Write-Output "Tauri icons already match $faviconPath"
+      return
+    }
+  }
+
   $magick = Get-Command magick -ErrorAction SilentlyContinue
   if (-not $magick) {
     throw 'ImageMagick magick.exe is required to generate Tauri icons from the GitHub Page favicon.'
@@ -110,10 +138,11 @@ function Sync-TauriIconsFromPage($faviconPath) {
 
   Push-Location $root
   try {
-    & npx tauri icon $iconPng --output (Join-Path $root 'src-tauri\icons')
+    & npx tauri icon $iconPng --output $iconsDir
     if ($LASTEXITCODE -ne 0) {
       throw 'Failed to generate Tauri icons from the GitHub Page favicon.'
     }
+    Set-Content -LiteralPath $sourceHashPath -Value $newHash -NoNewline
   }
   finally {
     Pop-Location
@@ -155,9 +184,20 @@ try {
 
   $app = Join-Path $src 'js\app.js'
   Replace-Text $app "import { createLiquidGlass } from 'https://esm.sh/solid-glass@0.0.3/engines/svg-refraction';" "import 'solid-glass/css';`nimport { createLiquidGlass } from 'solid-glass/engines/svg-refraction';"
-  Replace-Text $app "import { zip } from 'https://esm.sh/fflate@0.8.2';" "import { zip } from 'fflate';`nimport '../css/style.css';"
+  Replace-Text $app "import { zip } from 'https://esm.sh/fflate@0.8.2';" "import { zipSync } from 'fflate';`nimport '../css/style.css';"
   Replace-Text $app "downloadBlob(new Blob([file.bytes], { type: file.mime }), file.name);" "const saved = await downloadBlob(`n        new Blob([file.bytes], { type: file.mime }),`n        file.name,`n      );`n      if (!saved) {`n        showToast('Download canceled.');`n        return;`n      }"
   Replace-Text $app "downloadBlob(`n        new Blob([zipBytes], { type: 'application/zip' }),`n        'picdrop-images.zip',`n      );" "const saved = await downloadBlob(`n        new Blob([zipBytes], { type: 'application/zip' }),`n        'picdrop-images.zip',`n      );`n      if (!saved) {`n        showToast('Download canceled.');`n        return;`n      }"
+  Replace-Text $app "showToast('Compressing files...', { persist: true });" "showToast('Preparing ZIP file...', { persist: true });"
+  Replace-Text $app @'
+      const zipBytes = await new Promise((resolve, reject) => {
+        zip(zipEntries, { level: 6 }, (err, data) => {
+          if (err) reject(err);
+          else resolve(data);
+        });
+      });
+'@ @'
+      const zipBytes = zipSync(zipEntries, { level: 0 });
+'@
 
   Apply-TauriDownloadPatch (Join-Path $src 'js\modules\file-utils.js')
 

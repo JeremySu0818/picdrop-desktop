@@ -17,6 +17,9 @@ src-tauri/target/
 src-tauri/gen/android/.gradle/
 src-tauri/gen/android/build/
 src-tauri/gen/android/app/build/
+src-tauri/gen/android/app/src/main/res/mipmap-*/ic_launcher*.png
+src-tauri/gen/android/app/src/main/res/mipmap-anydpi-v26/
+src-tauri/icons/.source-favicon.sha256
 src-tauri/gen/android/buildSrc/build/
 src-tauri/gen/android/local.properties
 src-tauri/gen/android/key.properties
